@@ -13,7 +13,32 @@ return new class extends Migration
     {
         Schema::create('installations', function (Blueprint $table) {
             $table->id();
+
+            $table->string('code_installation')->unique();
+            $table->string('nom');
+
+            // UML shows enum ProfilCatLab/ProfilIRM via relation, type_profil in Installation
+            $table->enum('type_profil', ['ProfilIRM', 'ProfilCatLab'])->nullable();
+
+            $table->string('statut')->default('pending');
+            $table->string('criticite')->nullable();
+
+            // Foreign keys from UML
+            $table->foreignId('proprietaire_interne_id')
+                ->nullable()
+                ->constrained('users')
+                ->nullOnDelete();
+
+            $table->foreignId('client_id')
+                ->nullable()
+                ->constrained('clients')
+                ->cascadeOnDelete();
+
+            $table->foreignId('equipement_principal_id')
+                ->nullable();
+
             $table->timestamps();
+            $table->softDeletes();
         });
     }
 
