@@ -44,4 +44,9 @@ class Installation extends Model
     {
         return $this->hasOne(ProfilIrm::class);
     }
+
+    public function client()
+    {
+        return $this->belongsTo(Client::class);
+    }
 }
