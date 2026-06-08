@@ -13,7 +13,16 @@ return new class extends Migration
     {
         Schema::create('installations', function (Blueprint $table) {
             $table->id();
+            $table->string('code_installation')->unique();
+            $table->string('nom');
+            $table->enum('type_profil', ['IRM', 'CATHETERISME']);
+            $table->string('statut')->default('Brouillon');
+            $table->string('criticite')->nullable();
+            $table->unsignedBigInteger('proprietaire_interne_id')->nullable();
+            $table->unsignedBigInteger('client_id')->nullable();
+            $table->unsignedBigInteger('equipement_principal_id')->nullable();
             $table->timestamps();
+            $table->softDeletes();
         });
     }
 
