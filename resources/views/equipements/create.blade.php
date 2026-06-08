@@ -11,6 +11,15 @@
 <form action="{{ route('equipements.store') }}" method="POST">
     @csrf
     <div class="form-section">
+        @if ($errors->any())
+            <div class="alert alert-danger alert-gmao mb-4">
+                <ul class="mb-0">
+                    @foreach ($errors->all() as $error)
+                        <li>{{ $error }}</li>
+                    @endforeach
+                </ul>
+            </div>
+        @endif
         <h3>Informations</h3>
         <div class="row mb-3">
             <div class="col-md-4">
