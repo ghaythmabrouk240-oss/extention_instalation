@@ -20,7 +20,7 @@ return new class extends Migration
             $table->string('designation');
             $table->string('numero_serie');
             $table->unsignedBigInteger('modalite_id');
-            $table->unsignedBigInteger('client_id');
+            $table->foreignId('client_id')->constrained('clients')->cascadeOnDelete();
             $table->string('software');
             $table->date('date_installation');
             $table->date('date_debut_garantie');

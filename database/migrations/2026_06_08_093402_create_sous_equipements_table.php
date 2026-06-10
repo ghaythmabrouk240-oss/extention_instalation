@@ -18,7 +18,7 @@ return new class extends Migration
             $table->string('marque');
             $table->string('modele');
             $table->string('description');
-            $table->unsignedBigInteger('equipement_id');
+            $table->foreignId('equipement_id')->constrained('equipements')->cascadeOnDelete();
             $table->timestamps();
             $table->softDeletes();
         });

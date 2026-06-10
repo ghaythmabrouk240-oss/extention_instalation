@@ -1,7 +1,6 @@
 <?php
 
 use Illuminate\Support\Facades\Route;
-use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\InstallationController;
 use App\Http\Controllers\EquipementController;
 use App\Http\Controllers\DocumentInstallationController;
@@ -10,10 +9,11 @@ use App\Http\Controllers\ProfilCatLabController;
 use App\Http\Controllers\HistoriqueStatutInstallationController;
 
 Route::get('/', function () {
-    return redirect()->route('dashboard');
+    return redirect()->route('installations.index');
 });
 
-Route::get('dashboard', DashboardController::class)->name('dashboard');
+Route::get('installations-calendar', [InstallationController::class, 'calendar'])->name('installations.calendar');
+Route::get('installations/{installation}/export', [InstallationController::class, 'export'])->name('installations.export');
 Route::resource('installations', InstallationController::class);
 Route::resource('equipements', EquipementController::class);
 Route::resource('documents', DocumentInstallationController::class);

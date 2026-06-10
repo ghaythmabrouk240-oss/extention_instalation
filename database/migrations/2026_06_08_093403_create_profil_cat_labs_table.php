@@ -13,7 +13,7 @@ return new class extends Migration
     {
         Schema::create('profil_cat_labs', function (Blueprint $table) {
             $table->id();
-            $table->unsignedBigInteger('installation_id');
+            $table->foreignId('installation_id')->unique()->constrained('installations')->cascadeOnDelete();
             $table->string('systeme_angiographie');
             $table->string('radioprotection');
             $table->string('injecteur');

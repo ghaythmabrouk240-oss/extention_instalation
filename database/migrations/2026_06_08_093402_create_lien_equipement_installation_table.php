@@ -12,10 +12,18 @@ return new class extends Migration
     public function up(): void
     {
         Schema::create('lien_equipement_installation', function (Blueprint $table) {
-            $table->unsignedBigInteger('installation_id');
-            $table->unsignedBigInteger('equipement_id');
+            $table->foreignId('installation_id')->constrained('installations')->cascadeOnDelete();
+            $table->foreignId('equipement_id')->constrained('equipements')->cascadeOnDelete();
             $table->string('role');
             $table->timestamps();
+            $table->unique(['installation_id', 'equipement_id', 'role'], 'lien_equipement_installation_unique');
+        });
+
+        Schema::table('installations', function (Blueprint $table) {
+            $table->foreign('equipement_principal_id')
+                ->references('id')
+                ->on('equipements')
+                ->nullOnDelete();
         });
     }
 
@@ -24,6 +32,10 @@ return new class extends Migration
      */
     public function down(): void
     {
+        Schema::table('installations', function (Blueprint $table) {
+            $table->dropForeign(['equipement_principal_id']);
+        });
+
         Schema::dropIfExists('lien_equipement_installation');
     }
 };

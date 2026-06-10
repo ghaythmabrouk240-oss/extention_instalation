@@ -17,8 +17,7 @@ return new class extends Migration
             $table->string('code_installation')->unique();
             $table->string('nom');
 
-            // UML shows enum ProfilCatLab/ProfilIRM via relation, type_profil in Installation
-            $table->enum('type_profil', ['IRM', 'CATHETERISME'])->nullable();
+            $table->enum('type_profil', ['IRM', 'CATHETERISME']);
 
             $table->string('statut')->default('pending');
             $table->string('criticite')->nullable();
@@ -36,6 +35,11 @@ return new class extends Migration
 
             $table->foreignId('equipement_principal_id')
                 ->nullable();
+
+            $table->date('planned_start_date')->nullable();
+            $table->date('planned_end_date')->nullable();
+            $table->date('actual_start_date')->nullable();
+            $table->date('actual_end_date')->nullable();
 
             $table->timestamps();
             $table->softDeletes();

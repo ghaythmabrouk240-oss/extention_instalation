@@ -24,7 +24,10 @@
                     <td>{{ $se->identifiant }}</td>
                     <td>{{ $se->designation }}</td>
                     <td>{{ $se->equipement->code ?? 'N/A' }}</td>
-                    <td><a href="{{ route('sous-equipements.show', $se) }}" class="btn btn-action btn-view">Voir</a></td>
+                    <td>
+                        <a href="{{ route('sous-equipements.show', $se) }}" class="btn btn-action btn-view" title="Voir"><i class="fa-solid fa-eye"></i></a>
+                        <a href="{{ route('sous-equipements.edit', $se) }}" class="btn btn-action btn-edit" title="Modifier"><i class="fa-solid fa-pen"></i></a>
+                    </td>
                 </tr>
                 @endforeach
             </tbody>

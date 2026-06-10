@@ -2,145 +2,216 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Client;
 use App\Models\Equipement;
 use App\Models\HistoriqueStatutInstallation;
 use App\Models\Installation;
-use App\Services\InstallationStatusService;
+use App\Models\User;
+use App\Services\ExcelExportService;
+use Carbon\Carbon;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\Request;
+use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Validation\Rule;
-use Illuminate\Validation\ValidationException;
 
 class InstallationController extends Controller
 {
-    public function __construct(private readonly InstallationStatusService $statusService)
-    {
-    }
-
     public function index(Request $request)
     {
-        $this->authorizeInstallation('viewAny', Installation::class);
+        $query = Installation::with(['equipementPrincipal', 'documents', 'client']);
 
-        $query = Installation::query();
-
-        $query->when($request->filled('profil'), fn ($q) => $q->where('type_profil', (string) $request->string('profil')));
-        $query->when($request->filled('statut'), fn ($q) => $q->where('statut', (string) $request->string('statut')));
-        $query->when($request->filled('client_id'), fn ($q) => $q->where('client_id', $request->integer('client_id')));
-        $query->when($request->filled('equipement_principal_id'), fn ($q) => $q->where('equipement_principal_id', $request->integer('equipement_principal_id')));
-
-        if ($request->boolean('documents_manquants')) {
-            $query->whereDoesntHave('documents', fn ($q) => $q->where('est_bloquant', true));
+        if ($request->filled('type_profil')) {
+            $query->where('type_profil', $request->input('type_profil'));
         }
 
-        $this->applySorting($query, (string) $request->input('sort', 'recent'));
+        if ($request->filled('statut')) {
+            $query->where('statut', $request->input('statut'));
+        }
 
-        $installations = $query->get();
-        $equipements = Equipement::orderBy('code')->get();
-        $currentUser = $this->effectiveUser();
+        if ($request->filled('client_id')) {
+            $query->where('client_id', $request->input('client_id'));
+        }
 
-        return view('installations.index', compact('installations', 'equipements', 'currentUser'));
+        if ($request->filled('search')) {
+            $search = $request->input('search');
+            $query->where(function (Builder $builder) use ($search) {
+                $builder->where('code_installation', 'like', "%{$search}%")
+                    ->orWhere('nom', 'like', "%{$search}%");
+            });
+        }
+
+        $installations = $query->latest()->get();
+
+        if ($request->boolean('export')) {
+            return $this->exportList($installations);
+        }
+
+        if ($request->filled('documents_manquants')) {
+            $installations = $installations->filter(fn (Installation $installation) => $installation->missingRequiredDocumentCategories() !== []);
+        }
+
+        return view('installations.index', [
+            'installations' => $installations,
+            'clients' => Client::orderBy('nom')->get(),
+            'statuses' => Installation::standardStatuses(),
+            'filters' => $request->only(['type_profil', 'statut', 'client_id', 'search', 'documents_manquants']),
+        ]);
+    }
+
+    public function calendar(Request $request)
+    {
+        $month = Carbon::parse($request->input('month', now()->format('Y-m')) . '-01')->startOfMonth();
+        $start = $month->copy()->startOfMonth();
+        $end = $month->copy()->endOfMonth();
+        $calendarStart = $start->copy()->startOfWeek(Carbon::MONDAY);
+        $calendarEnd = $end->copy()->endOfWeek(Carbon::SUNDAY);
+
+        $installations = $this->installationsOverlappingPeriod($calendarStart, $calendarEnd);
+        $interventions = HistoriqueStatutInstallation::with('installation')
+            ->whereBetween('created_at', [$calendarStart->copy()->startOfDay(), $calendarEnd->copy()->endOfDay()])
+            ->orderBy('created_at')
+            ->get()
+            ->groupBy(fn (HistoriqueStatutInstallation $item) => $item->created_at->format('Y-m-d'));
+
+        $weeks = [];
+        $cursor = $calendarStart->copy();
+        $monthStats = ['installations' => 0, 'interventions' => 0];
+
+        while ($cursor->lte($calendarEnd)) {
+            $week = [];
+
+            for ($day = 0; $day < 7; $day++) {
+                $events = $this->eventsForDay($cursor, $installations, $interventions->get($cursor->format('Y-m-d'), collect()));
+
+                if ($cursor->month === $month->month) {
+                    foreach ($events as $event) {
+                        if ($event['type'] === 'intervention') {
+                            $monthStats['interventions']++;
+                        } elseif ($event['isStart'] ?? false) {
+                            $monthStats['installations']++;
+                        }
+                    }
+                }
+
+                $week[] = [
+                    'date' => $cursor->copy(),
+                    'isCurrentMonth' => $cursor->month === $month->month,
+                    'isToday' => $cursor->isToday(),
+                    'events' => $events,
+                ];
+                $cursor->addDay();
+            }
+
+            $weeks[] = $week;
+        }
+
+        return view('installations.calendar', [
+            'weeks' => $weeks,
+            'month' => $month,
+            'previousMonth' => $month->copy()->subMonth()->format('Y-m'),
+            'nextMonth' => $month->copy()->addMonth()->format('Y-m'),
+            'monthStats' => $monthStats,
+        ]);
     }
 
     public function create()
     {
-        $this->authorizeInstallation('create', Installation::class);
+        $equipements = Equipement::orderBy('code')->get();
+        $clients = Client::orderBy('nom')->get();
+        $users = User::orderBy('name')->get();
 
-        $equipements = Equipement::all();
-
-        return view('installations.create', compact('equipements'));
+        return view('installations.create', compact('equipements', 'clients', 'users'));
     }
 
     public function store(Request $request)
     {
-        $this->authorizeInstallation('create', Installation::class);
+        $validated = $this->validateInstallation($request);
+        $cathProfile = $this->validateCathProfile($request, $validated['type_profil']);
+        $secondaryEquipements = $validated['equipements_secondaires'] ?? [];
+        unset($validated['equipements_secondaires']);
 
-        $validated = $this->validatedInstallationData($request);
-        $mriData = $this->validatedMriData($request);
-
-        $installation = DB::transaction(function () use ($validated, $mriData) {
-            $initialStatus = $validated['statut'];
-            $validated['statut'] = InstallationStatusService::BROUILLON;
-
+        $installation = DB::transaction(function () use ($validated, $cathProfile, $secondaryEquipements) {
             $installation = Installation::create($validated);
 
-            if ($installation->type_profil === Installation::TYPE_IRM) {
-                $installation->profilIrm()->create($mriData);
-                $installation->load('profilIrm');
+            if ($installation->type_profil === 'CATHETERISME') {
+                $installation->profilCatLab()->create($cathProfile);
             }
 
-            if ($initialStatus !== InstallationStatusService::BROUILLON) {
-                $this->statusService->assertCanTransition(
-                    $installation,
-                    $initialStatus,
-                    $this->effectiveUser(),
-                    $mriData
-                );
-
-                $installation->statut = $initialStatus;
-                $installation->save();
-            }
+            $this->syncSecondaryEquipements($installation, $secondaryEquipements);
 
             HistoriqueStatutInstallation::create([
                 'installation_id' => $installation->id,
-                'user_id' => $this->effectiveUserId(),
+                'user_id' => auth()->id() ?? 1,
                 'ancien_statut' => '',
                 'nouveau_statut' => $installation->statut,
-                'commentaire' => "Création de l'installation",
+                'commentaire' => 'Creation de l installation',
             ]);
 
             return $installation;
         });
 
-        return redirect()
-            ->route('installations.index')
-            ->with('success', 'Installation créée avec succès.');
+        return redirect()->route('installations.show', $installation)->with('success', 'Installation creee avec succes.');
     }
 
     public function show(Installation $installation)
     {
-        $this->authorizeInstallation('view', $installation);
+        $installation->load([
+            'documents',
+            'historiqueStatuts',
+            'equipements.sousEquipements',
+            'equipementPrincipal.sousEquipements',
+            'profilCatLab',
+            'profilIrm',
+            'client',
+            'proprietaireInterne',
+        ]);
 
-        $installation->load(['documents', 'historiqueStatuts', 'equipements', 'profilCatLab', 'profilIrm']);
+        return view('installations.show', [
+            'installation' => $installation,
+            'missingRequiredDocuments' => $installation->missingRequiredDocumentCategories(),
+            'uploadableReports' => collect(Installation::uploadableReportCategories())
+                ->map(fn (array $report) => array_merge($report, [
+                    'document' => $installation->activeDocumentByCategorie($report['categorie']),
+                ])),
+        ]);
+    }
 
-        return view('installations.show', compact('installation'));
+    public function export(Installation $installation)
+    {
+        $excelService = new ExcelExportService();
+        $filePath = $excelService->exportInstallation($installation);
+        
+        $filename = sprintf(
+            'installation-%s-%s.xlsx',
+            $installation->code_installation,
+            now()->format('Y-m-d')
+        );
+
+        return response()->download($filePath, $filename)->deleteFileAfterSend(true);
     }
 
     public function edit(Installation $installation)
     {
-        $this->authorizeInstallation('update', $installation);
+        $installation->load('profilCatLab', 'equipements');
+        $equipements = Equipement::orderBy('code')->get();
+        $clients = Client::orderBy('nom')->get();
+        $users = User::orderBy('name')->get();
 
-        $installation->load('profilIrm');
-        $equipements = Equipement::all();
-
-        return view('installations.edit', compact('installation', 'equipements'));
+        return view('installations.edit', compact('installation', 'equipements', 'clients', 'users'));
     }
 
     public function update(Request $request, Installation $installation)
     {
-        $this->authorizeInstallation('update', $installation);
+        $validated = $this->validateInstallation($request, $installation);
+        $cathProfile = $this->validateCathProfile($request, $validated['type_profil']);
+        $secondaryEquipements = $validated['equipements_secondaires'] ?? [];
+        unset($validated['equipements_secondaires']);
 
-        $validated = $this->validatedInstallationData($request, $installation);
-        $mriData = $this->validatedMriData($request);
-
-        if ($installation->type_profil !== $validated['type_profil']) {
-            throw ValidationException::withMessages([
-                'type_profil' => 'Le changement de profil après création est bloqué dans ce POC.',
-            ]);
-        }
-
-        DB::transaction(function () use ($installation, $validated, $mriData) {
+        DB::transaction(function () use ($installation, $validated, $cathProfile, $secondaryEquipements) {
             if ($installation->statut !== $validated['statut']) {
-                $this->authorizeInstallation('changeStatus', $installation);
-                $this->statusService->assertCanTransition(
-                    $installation,
-                    $validated['statut'],
-                    $this->effectiveUser(),
-                    $mriData
-                );
-
                 HistoriqueStatutInstallation::create([
                     'installation_id' => $installation->id,
-                    'user_id' => $this->effectiveUserId(),
+                    'user_id' => auth()->id() ?? 1,
                     'ancien_statut' => $installation->statut,
                     'nouveau_statut' => $validated['statut'],
                     'commentaire' => 'Changement de statut via modification',
@@ -149,109 +220,176 @@ class InstallationController extends Controller
 
             $installation->update($validated);
 
-            if ($installation->type_profil === Installation::TYPE_IRM) {
-                $installation->profilIrm()->updateOrCreate(
+            if ($installation->type_profil === 'CATHETERISME') {
+                $installation->profilCatLab()->updateOrCreate(
                     ['installation_id' => $installation->id],
-                    $mriData
+                    $cathProfile
                 );
+            } else {
+                $installation->profilCatLab()->delete();
             }
+
+            $this->syncSecondaryEquipements($installation, $secondaryEquipements);
         });
 
-        return redirect()
-            ->route('installations.show', $installation)
-            ->with('success', 'Installation mise à jour avec succès.');
+        return redirect()->route('installations.show', $installation)->with('success', 'Installation mise a jour avec succes.');
     }
 
     public function destroy(Installation $installation)
     {
-        $this->authorizeInstallation('delete', $installation);
-
         $installation->delete();
 
-        return redirect()
-            ->route('installations.index')
-            ->with('success', 'Installation supprimée avec succès.');
+        return redirect()->route('installations.index')->with('success', 'Installation supprimee avec succes.');
     }
 
-    private function validatedInstallationData(Request $request, ?Installation $installation = null): array
+    private function validateInstallation(Request $request, ?Installation $installation = null): array
     {
-        $codeRule = Rule::unique('installations', 'code_installation');
-
-        if ($installation) {
-            $codeRule->ignore($installation->id);
-        }
+        $installationId = $installation?->id;
 
         return $request->validate([
-            'code_installation' => [
-                'required',
-                'string',
-                $codeRule,
-            ],
+            'code_installation' => 'required|string|unique:installations,code_installation,' . $installationId,
             'nom' => 'required|string|max:255',
-            'type_profil' => ['required', Rule::in(Installation::profileTypes())],
-            'statut' => ['required', Rule::in(InstallationStatusService::statuses())],
+            'type_profil' => 'required|in:IRM,CATHETERISME',
+            'statut' => 'required|in:' . implode(',', Installation::standardStatuses()),
             'criticite' => 'nullable|string',
-            'client_id' => 'nullable|integer',
-            'equipement_principal_id' => 'nullable|integer',
-            'proprietaire_interne_id' => 'nullable|integer',
+            'client_id' => 'nullable|exists:clients,id',
+            'equipement_principal_id' => 'nullable|exists:equipements,id',
+            'proprietaire_interne_id' => 'nullable|exists:users,id',
+            'planned_start_date' => 'nullable|date',
+            'planned_end_date' => 'nullable|date|after_or_equal:planned_start_date',
+            'actual_start_date' => 'nullable|date',
+            'actual_end_date' => 'nullable|date|after_or_equal:actual_start_date',
+            'calendar_note' => 'nullable|string',
+            'equipements_secondaires' => 'array',
+            'equipements_secondaires.*' => 'exists:equipements,id',
         ]);
     }
 
-    private function validatedMriData(Request $request): array
+    private function validateCathProfile(Request $request, string $typeProfil): array
     {
-        $request->validate([
-            'profil_irm.champ_magnetique' => 'nullable|string|max:255',
-            'profil_irm.blindage' => 'nullable|string|max:255',
-            'profil_irm.atelier' => 'nullable|string|max:255',
-            'profil_irm.batiment' => 'nullable|string|max:255',
-            'profil_irm.etage' => 'nullable|string|max:255',
-            'profil_irm.zone' => 'nullable|string|max:255',
+        if ($typeProfil !== 'CATHETERISME') {
+            return [];
+        }
+
+        $validated = $request->validate([
+            'departement' => 'required|string|max:255',
+            'batiment' => 'required|string|max:255',
+            'etage' => 'required|string|max:255',
+            'systeme_angiographie' => 'required|string|max:255',
+            'station_controle' => 'required|string|max:255',
+            'radioprotection' => 'required|string|max:255',
+            'injecteur' => 'required|string|max:255',
+            'moniteurs' => 'required|string|max:255',
+            'controle_acces' => 'boolean',
+            'table_patient' => 'required|string|max:255',
+            'alimentation' => 'required|string|max:255',
+            'reseau' => 'required|string|max:255',
+            'ventilation' => 'required|string|max:255',
+            'protection_murale' => 'required|string|max:255',
+            'stockage_consommables' => 'required|string|max:255',
+            'signalisation_rayonnement' => 'required|string|max:255',
+            'conformite_salle_interventionnelle' => 'required|string|max:255',
+            'dispositifs_securite' => 'required|string|max:255',
         ]);
 
-        $data = $request->input('profil_irm', []);
+        $validated['controle_acces'] = $request->boolean('controle_acces');
 
-        return [
-            'champ_magnetique' => $data['champ_magnetique'] ?? null,
-            'zone_controlee' => (bool) $request->input('profil_irm.zone_controlee', false),
-            'blindage' => $data['blindage'] ?? null,
-            'atelier' => $data['atelier'] ?? null,
-            'confinement_ferromagnetique' => (bool) $request->input('profil_irm.confinement_ferromagnetique', false),
-            'arret_urgence' => (bool) $request->input('profil_irm.arret_urgence', false),
-            'batiment' => $data['batiment'] ?? null,
-            'etage' => $data['etage'] ?? null,
-            'zone' => $data['zone'] ?? null,
-        ];
+        return $validated;
     }
 
-    private function applySorting($query, string $sort): void
+    private function syncSecondaryEquipements(Installation $installation, array $equipementIds): void
     {
-        match ($sort) {
-            'nom_az' => $query->orderBy('nom')->orderBy('code_installation'),
-            'nom_za' => $query->orderByDesc('nom')->orderBy('code_installation'),
-            'code_az' => $query->orderBy('code_installation'),
-            'code_za' => $query->orderByDesc('code_installation'),
-            'profil' => $query->orderBy('type_profil')->orderBy('nom'),
-            'statut_cycle' => $query
-                ->orderByRaw($this->statusOrderCase())
-                ->orderBy('nom'),
-            'criticite_desc' => $query
-                ->orderByRaw($this->criticalityOrderCase().' DESC')
-                ->orderBy('nom'),
-            'criticite_asc' => $query
-                ->orderByRaw($this->criticalityOrderCase().' ASC')
-                ->orderBy('nom'),
-            'oldest' => $query->oldest(),
-            default => $query->latest(),
-        };
+        $syncPayload = collect($equipementIds)
+            ->filter()
+            ->reject(fn ($id) => (int) $id === (int) $installation->equipement_principal_id)
+            ->unique()
+            ->mapWithKeys(fn ($id) => [(int) $id => ['role' => 'secondaire']])
+            ->all();
+
+        $installation->equipements()->sync($syncPayload);
     }
 
-    private function criticalityOrderCase(): string
+    private function installationsOverlappingPeriod(Carbon $periodStart, Carbon $periodEnd): Collection
     {
-        return "CASE criticite WHEN 'Critique' THEN 4 WHEN 'Haute' THEN 3 WHEN 'Moyenne' THEN 2 WHEN 'Basse' THEN 1 ELSE 0 END";
+        return Installation::with('client')
+            ->where(function (Builder $query) use ($periodStart, $periodEnd) {
+                $this->applyDateRangeOverlap($query, 'planned_start_date', 'planned_end_date', $periodStart, $periodEnd);
+                $query->orWhere(function (Builder $query) use ($periodStart, $periodEnd) {
+                    $this->applyDateRangeOverlap($query, 'actual_start_date', 'actual_end_date', $periodStart, $periodEnd);
+                });
+            })
+            ->orderBy('planned_start_date')
+            ->orderBy('code_installation')
+            ->get();
     }
 
-    private function statusOrderCase(): string
+    private function applyDateRangeOverlap(
+        Builder $query,
+        string $startColumn,
+        string $endColumn,
+        Carbon $periodStart,
+        Carbon $periodEnd
+    ): void {
+        $query->whereNotNull($startColumn)
+            ->where($startColumn, '<=', $periodEnd->toDateString())
+            ->where(function (Builder $query) use ($endColumn, $periodStart) {
+                $query->whereNull($endColumn)
+                    ->orWhere($endColumn, '>=', $periodStart->toDateString());
+            });
+    }
+
+    private function eventsForDay(Carbon $day, Collection $installations, Collection $interventions): array
     {
-        return "CASE statut WHEN 'Brouillon' THEN 1 WHEN 'En validation' THEN 2 WHEN 'Installé' THEN 3 WHEN 'Opérationnel' THEN 4 WHEN 'En maintenance' THEN 5 WHEN 'Temporairement indisponible' THEN 6 WHEN 'Archivé' THEN 7 ELSE 99 END";
+        $events = [];
+        $dayString = $day->toDateString();
+
+        foreach ($installations as $installation) {
+            if ($this->dayInDateRange($day, $installation->planned_start_date, $installation->planned_end_date)) {
+                $events[] = [
+                    'type' => 'installation_planned',
+                    'installation' => $installation,
+                    'isStart' => $installation->planned_start_date?->toDateString() === $dayString,
+                ];
+            }
+
+            if ($this->dayInDateRange($day, $installation->actual_start_date, $installation->actual_end_date)) {
+                $events[] = [
+                    'type' => 'installation_actual',
+                    'installation' => $installation,
+                    'isStart' => $installation->actual_start_date?->toDateString() === $dayString,
+                ];
+            }
+        }
+
+        foreach ($interventions as $intervention) {
+            $events[] = [
+                'type' => 'intervention',
+                'intervention' => $intervention,
+                'isStart' => true,
+            ];
+        }
+
+        return $events;
+    }
+
+    private function dayInDateRange(Carbon $day, ?Carbon $start, ?Carbon $end): bool
+    {
+        if ($start === null) {
+            return false;
+        }
+
+        $end = $end ?? $start;
+
+        return $day->betweenIncluded($start->copy()->startOfDay(), $end->copy()->endOfDay());
+    }
+
+    private function exportList(Collection $installations)
+    {
+        $excelService = new ExcelExportService();
+        $filePath = $excelService->exportInstallationsList($installations);
+        
+        $filename = 'installations-' . now()->format('Y-m-d') . '.xlsx';
+
+        return response()->download($filePath, $filename)->deleteFileAfterSend(true);
     }
 }
