@@ -24,7 +24,7 @@
         <ul class="nav flex-column mt-3">
             <li class="nav-item sidebar-section">Menu Principal</li>
             <li class="nav-item">
-                <a class="nav-link text-white {{ request()->is('/') ? 'active' : '' }}" href="{{ url('/') }}">
+                <a class="nav-link text-white {{ request()->is('/') || request()->is('dashboard') ? 'active' : '' }}" href="{{ route('dashboard') }}">
                     <i class="fa-solid fa-gauge me-2"></i> Tableau de bord
                 </a>
             </li>
@@ -62,9 +62,22 @@
         <!-- Topbar -->
         <header class="topbar d-flex justify-content-between align-items-center mb-4">
             <div>
-                <h5 class="mb-0 text-muted">Bonjour Utilisateur!</h5>
+                @php
+                    $demoRole = auth()->user()->role ?? session('demo_role', \App\Models\User::ROLE_BIOMEDICAL);
+                    $roleLabel = [
+                        \App\Models\User::ROLE_ADMIN => 'Administrateur',
+                        \App\Models\User::ROLE_BIOMEDICAL => 'Biomédical',
+                        \App\Models\User::ROLE_MANAGER => 'Manager',
+                    ][$demoRole] ?? ucfirst($demoRole);
+                @endphp
+                <h5 class="mb-0 text-muted">Bonjour Utilisateur</h5>
+                <small class="text-muted">Rôle actif: <strong>{{ $roleLabel }}</strong></small>
             </div>
-            <div>
+            <div class="d-flex align-items-center gap-2">
+                <span class="badge bg-light text-dark border">POC rôles</span>
+                <a class="btn btn-sm {{ $demoRole === \App\Models\User::ROLE_BIOMEDICAL ? 'btn-primary' : 'btn-outline-secondary' }}" href="{{ request()->fullUrlWithQuery(['role' => 'biomedical']) }}">Biomédical</a>
+                <a class="btn btn-sm {{ $demoRole === \App\Models\User::ROLE_ADMIN ? 'btn-primary' : 'btn-outline-secondary' }}" href="{{ request()->fullUrlWithQuery(['role' => 'admin']) }}">Admin</a>
+                <a class="btn btn-sm {{ $demoRole === \App\Models\User::ROLE_MANAGER ? 'btn-primary' : 'btn-outline-secondary' }}" href="{{ request()->fullUrlWithQuery(['role' => 'manager']) }}">Manager</a>
                 <i class="fa-solid fa-user-circle fa-2x text-muted"></i>
             </div>
         </header>

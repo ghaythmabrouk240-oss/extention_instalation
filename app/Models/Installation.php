@@ -9,6 +9,9 @@ class Installation extends Model
 {
     use SoftDeletes;
 
+    public const TYPE_IRM = 'IRM';
+    public const TYPE_CATHETERISME = 'CATHETERISME';
+
     protected $fillable = [
         'code_installation',
         'nom',
@@ -19,6 +22,14 @@ class Installation extends Model
         'client_id',
         'equipement_principal_id',
     ];
+
+    public static function profileTypes(): array
+    {
+        return [
+            self::TYPE_IRM,
+            self::TYPE_CATHETERISME,
+        ];
+    }
 
     public function documents()
     {
@@ -42,7 +53,7 @@ class Installation extends Model
 
     public function profilIrm()
     {
-        return $this->hasOne(ProfilIrm::class);
+        return $this->hasOne(ProfilIRM::class);
     }
 
     public function client()

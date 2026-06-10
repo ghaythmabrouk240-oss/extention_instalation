@@ -18,7 +18,7 @@ return new class extends Migration
             $table->string('nom');
 
             // UML shows enum ProfilCatLab/ProfilIRM via relation, type_profil in Installation
-            $table->enum('type_profil', ['ProfilIRM', 'ProfilCatLab'])->nullable();
+            $table->enum('type_profil', ['IRM', 'CATHETERISME'])->nullable();
 
             $table->string('statut')->default('pending');
             $table->string('criticite')->nullable();

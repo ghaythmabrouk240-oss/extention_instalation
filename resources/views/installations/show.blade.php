@@ -30,14 +30,14 @@
         <div class="stat-card">
             <div class="stat-icon"><i class="fa-solid fa-signal"></i></div>
             <div class="stat-value">{{ $installation->statut }}</div>
-            <div class="stat-label">Statut Actuel</div>
+            <div class="stat-label">Statut actuel</div>
         </div>
     </div>
     <div class="col-md-3">
         <div class="stat-card">
             <div class="stat-icon"><i class="fa-solid fa-microchip"></i></div>
             <div class="stat-value">{{ $installation->equipements->count() + ($installation->equipement_principal_id ? 1 : 0) }}</div>
-            <div class="stat-label">Équipements Liés</div>
+            <div class="stat-label">Équipements liés</div>
         </div>
     </div>
     <div class="col-md-3">
@@ -56,7 +56,7 @@
                 <button class="nav-link active" id="general-tab" data-bs-toggle="tab" data-bs-target="#general" type="button" role="tab">Général</button>
             </li>
             <li class="nav-item" role="presentation">
-                <button class="nav-link" id="profil-tab" data-bs-toggle="tab" data-bs-target="#profil" type="button" role="tab">Profil Spécifique</button>
+                <button class="nav-link" id="profil-tab" data-bs-toggle="tab" data-bs-target="#profil" type="button" role="tab">Profil spécifique</button>
             </li>
             <li class="nav-item" role="presentation">
                 <button class="nav-link" id="equipements-tab" data-bs-toggle="tab" data-bs-target="#equipements" type="button" role="tab">Équipements</button>
@@ -68,9 +68,8 @@
                 <button class="nav-link" id="historique-tab" data-bs-toggle="tab" data-bs-target="#historique" type="button" role="tab">Historique</button>
             </li>
         </ul>
-        
+
         <div class="tab-content p-4" id="installationTabsContent">
-            <!-- GENERAL TAB -->
             <div class="tab-pane fade show active" id="general" role="tabpanel">
                 <div class="row">
                     <div class="col-md-6">
@@ -93,10 +92,20 @@
                     </div>
                 </div>
             </div>
-            
-            <!-- PROFIL TAB -->
+
             <div class="tab-pane fade" id="profil" role="tabpanel">
-                @if($installation->type_profil === 'CATHETERISME' && $installation->profilCatLab)
+                @if($installation->type_profil === \App\Models\Installation::TYPE_IRM && $installation->profilIrm)
+                    <h4 class="mb-3 text-primary">Détails Salle IRM</h4>
+                    <ul class="detail-list">
+                        <li><span class="detail-label">Champ magnétique</span><span class="detail-value">{{ $installation->profilIrm->champ_magnetique ?? 'Non défini' }}</span></li>
+                        <li><span class="detail-label">Zone contrôlée</span><span class="detail-value">{{ $installation->profilIrm->zone_controlee ? 'Oui' : 'Non' }}</span></li>
+                        <li><span class="detail-label">Blindage</span><span class="detail-value">{{ $installation->profilIrm->blindage ?? 'Non défini' }}</span></li>
+                        <li><span class="detail-label">Atelier</span><span class="detail-value">{{ $installation->profilIrm->atelier ?? 'Non défini' }}</span></li>
+                        <li><span class="detail-label">Confinement ferromagnétique</span><span class="detail-value">{{ $installation->profilIrm->confinement_ferromagnetique ? 'Oui' : 'Non' }}</span></li>
+                        <li><span class="detail-label">Arrêt urgence</span><span class="detail-value">{{ $installation->profilIrm->arret_urgence ? 'Oui' : 'Non' }}</span></li>
+                        <li><span class="detail-label">Bâtiment / Étage / Zone</span><span class="detail-value">{{ $installation->profilIrm->batiment ?? '-' }} / {{ $installation->profilIrm->etage ?? '-' }} / {{ $installation->profilIrm->zone ?? '-' }}</span></li>
+                    </ul>
+                @elseif($installation->type_profil === \App\Models\Installation::TYPE_CATHETERISME && $installation->profilCatLab)
                     <h4 class="mb-3 text-primary">Détails Salle de Cathétérisme</h4>
                     <ul class="detail-list">
                         <li><span class="detail-label">Système Angiographie</span><span class="detail-value">{{ $installation->profilCatLab->systeme_angiographie }}</span></li>
@@ -113,7 +122,6 @@
                 @endif
             </div>
 
-            <!-- EQUIPEMENTS TAB -->
             <div class="tab-pane fade" id="equipements" role="tabpanel">
                 <table class="table table-gmao table-hover">
                     <thead>
@@ -143,7 +151,6 @@
                 </table>
             </div>
 
-            <!-- DOCUMENTS TAB -->
             <div class="tab-pane fade" id="documents" role="tabpanel">
                 <table class="table table-gmao table-hover">
                     <thead>
@@ -151,7 +158,7 @@
                             <th>Catégorie</th>
                             <th>Version</th>
                             <th>Statut</th>
-                            <th>Est Bloquant</th>
+                            <th>Bloquant</th>
                             <th>Date</th>
                         </tr>
                     </thead>
@@ -179,7 +186,6 @@
                 </table>
             </div>
 
-            <!-- HISTORIQUE TAB -->
             <div class="tab-pane fade" id="historique" role="tabpanel">
                 <table class="table table-gmao table-hover">
                     <thead>
@@ -208,7 +214,6 @@
                     </tbody>
                 </table>
             </div>
-            
         </div>
     </div>
 </div>

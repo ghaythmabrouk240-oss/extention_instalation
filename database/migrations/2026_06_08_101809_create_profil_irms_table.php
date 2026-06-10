@@ -13,8 +13,9 @@ return new class extends Migration
     {
         Schema::create('profil_irms', function (Blueprint $table) {
             $table->id();
-            $table->foreignId('installation_id')->constrained('installations')->cascadeOnDelete();
+            $table->foreignId('installation_id')->unique()->constrained('installations')->cascadeOnDelete();
             $table->string('champ_magnetique')->nullable();
+            $table->boolean('zone_controlee')->default(false);
             $table->string('blindage')->nullable();
             $table->string('atelier')->nullable();
             $table->boolean('confinement_ferromagnetique')->default(false);
