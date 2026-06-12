@@ -16,7 +16,8 @@ class EquipementController extends Controller
 
     public function create()
     {
-        return view('equipements.create');
+        $clients = \App\Models\Client::orderBy('nom')->get();
+        return view('equipements.create', compact('clients'));
     }
 
     public function store(Request $request)

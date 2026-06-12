@@ -7,6 +7,9 @@
     <div>
         <h1>Modifier Installation: {{ $installation->code_installation }}</h1>
         <p class="breadcrumb"><a href="{{ route('installations.index') }}">Installations</a> > Modifier</p>
+        @if(session('test_message'))
+            <p class="text-danger">{{ session('test_message') }}</p>
+        @endif
     </div>
 </div>
 
@@ -94,6 +97,11 @@
                 @include('installations.partials.cathlab-fields', ['cat' => $installation->profilCatLab])
             </div>
 
+            <div class="form-section" id="irm-fields">
+                <h3><i class="fa-solid fa-magnet me-2"></i>Profil specifique IRM</h3>
+                @include('installations._mri_fields', ['installation' => $installation])
+            </div>
+
             <div class="form-section">
                 <h3><i class="fa-solid fa-link me-2"></i>Rattachement</h3>
                 <div class="row mb-3">
@@ -158,12 +166,37 @@
 <script>
     const typeProfil = document.getElementById('type_profil');
     const cathFields = document.getElementById('cathlab-fields');
+    const irmFields = document.getElementById('irm-fields');
 
-    function toggleCathFields() {
-        cathFields.style.display = typeProfil.value === 'CATHETERISME' ? 'block' : 'none';
+    function toggleProfileFields() {
+        const isCath = typeProfil.value === 'CATHETERISME';
+        const isIrm = typeProfil.value === 'IRM';
+
+        cathFields.style.display = isCath ? 'block' : 'none';
+        irmFields.style.display = isIrm ? 'block' : 'none';
+
+        // Toggle required attributes for cathlab fields
+        const cathInputs = cathFields.querySelectorAll('input[required], select[required], textarea[required]');
+        cathInputs.forEach(input => {
+            if (isCath) {
+                input.setAttribute('required', 'required');
+            } else {
+                input.removeAttribute('required');
+            }
+        });
+
+        // Toggle required attributes for IRM fields
+        const irmInputs = irmFields.querySelectorAll('input[required], select[required], textarea[required]');
+        irmInputs.forEach(input => {
+            if (isIrm) {
+                input.setAttribute('required', 'required');
+            } else {
+                input.removeAttribute('required');
+            }
+        });
     }
 
-    typeProfil.addEventListener('change', toggleCathFields);
-    toggleCathFields();
+    typeProfil.addEventListener('change', toggleProfileFields);
+    toggleProfileFields();
 </script>
 @endsection

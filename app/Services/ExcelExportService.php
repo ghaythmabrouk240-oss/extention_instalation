@@ -103,6 +103,21 @@ class ExcelExportService
             $this->addKeyValueRow('Dispositifs securite', $cat->dispositifs_securite);
         }
 
+        // IRM Profile Section
+        if ($installation->type_profil === 'IRM' && $installation->profilIrm) {
+            $irm = $installation->profilIrm;
+            $this->addSectionHeader('PROFIL IRM');
+            $this->addKeyValueRow('Champ magnetique', $irm->champ_magnetique);
+            $this->addKeyValueRow('Blindage', $irm->blindage);
+            $this->addKeyValueRow('Atelier / Local technique', $irm->atelier ?? 'Non defini');
+            $this->addKeyValueRow('Batiment', $irm->batiment);
+            $this->addKeyValueRow('Etage', $irm->etage);
+            $this->addKeyValueRow('Zone', $irm->zone);
+            $this->addKeyValueRow('Zone controlee', $irm->zone_controlee ? 'Oui' : 'Non');
+            $this->addKeyValueRow('Confinement ferromagnetique', $irm->confinement_ferromagnetique ? 'Oui' : 'Non');
+            $this->addKeyValueRow('Arret urgence', $irm->arret_urgence ? 'Oui' : 'Non');
+        }
+
         // Secondary Equipments Section
         $this->addSectionHeader('EQUIPEMENTS SECONDAIRES');
         $headers = ['Code', 'Designation', 'Marque', 'Modele', 'Role'];

@@ -33,17 +33,21 @@ class DocumentInstallationController extends Controller
 
     public function store(Request $request)
     {
-        $validated = $this->validateDocument($request);
-        $validated['est_bloquant'] = $request->boolean('est_bloquant');
-        $validated['est_version_active'] = $request->boolean('est_version_active', true);
-        $validated = $this->storeUploadedReport($request, $validated);
+        try {
+            $validated = $this->validateDocument($request);
+            $validated['est_bloquant'] = $request->boolean('est_bloquant');
+            $validated['est_version_active'] = $request->boolean('est_version_active', true);
+            $validated = $this->storeUploadedReport($request, $validated);
 
-        DB::transaction(function () use ($validated) {
-            $this->deactivatePreviousActiveVersions($validated);
-            DocumentInstallation::create($validated);
-        });
+            DB::transaction(function () use ($validated) {
+                $this->deactivatePreviousActiveVersions($validated);
+                DocumentInstallation::create($validated);
+            });
 
-        return $this->redirectAfterSave($request, (int) $validated['installation_id'], 'Document cree avec succes.');
+            return $this->redirectAfterSave($request, (int) $validated['installation_id'], 'Document cree avec succes.');
+        } catch (\Exception $e) {
+            return back()->withInput()->with('error', 'Erreur lors de la creation du document: ' . $e->getMessage());
+        }
     }
 
     public function show(DocumentInstallation $document)
@@ -57,22 +61,28 @@ class DocumentInstallationController extends Controller
     {
         $installations = Installation::orderBy('code_installation')->get();
 
-        return view('documents.edit', compact('document', 'installations'));
+        return view('documents.edit', compact('document', 'installations'))->with('test_message', 'Controller updated at ' . now());
     }
 
     public function update(Request $request, DocumentInstallation $document)
     {
-        $validated = $this->validateDocument($request);
-        $validated['est_bloquant'] = $request->boolean('est_bloquant');
-        $validated['est_version_active'] = $request->boolean('est_version_active');
-        $validated = $this->storeUploadedReport($request, $validated, $document);
+        try {
+            $validated = $this->validateDocument($request);
+            $validated['est_bloquant'] = $request->boolean('est_bloquant');
+            $validated['est_version_active'] = $request->boolean('est_version_active');
+            $validated = $this->storeUploadedReport($request, $validated, $document);
 
-        DB::transaction(function () use ($document, $validated) {
-            $this->deactivatePreviousActiveVersions($validated, $document);
-            $document->update($validated);
-        });
+            DB::transaction(function () use ($document, $validated) {
+                $this->deactivatePreviousActiveVersions($validated, $document);
+                $document->update($validated);
+            });
 
-        return $this->redirectAfterSave($request, (int) $validated['installation_id'], 'Document mis a jour avec succes.');
+            return redirect()->route('documents.show', $document)->with('success', 'Document mis a jour avec succes.');
+        } catch (\Illuminate\Validation\ValidationException $e) {
+            return back()->withInput()->withErrors($e->errors())->with('error', 'Erreur de validation');
+        } catch (\Exception $e) {
+            return back()->withInput()->with('error', 'Erreur: ' . $e->getMessage());
+        }
     }
 
     public function destroy(DocumentInstallation $document)
@@ -99,13 +109,12 @@ class DocumentInstallationController extends Controller
             'version' => 'required|string|max:255',
             'statut' => 'required|string|max:255',
             'description' => 'nullable|string',
-            'est_bloquant' => 'boolean',
+            'est_bloquant' => 'nullable|boolean',
             'reference_dms' => 'nullable|string|max:255',
             'reference_fichier' => 'nullable|string|max:255',
             'fichier' => $fileRules,
             'profil_concerne' => 'required|in:IRM,CATHETERISME,COMMUN',
-            'est_version_active' => 'boolean',
-            'requires_file' => 'boolean',
+            'est_version_active' => 'nullable|boolean',
             'redirect_to' => 'nullable|string',
         ]);
     }

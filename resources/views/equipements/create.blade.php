@@ -52,8 +52,12 @@
         <!-- Simplified for brevity, normally you'd add the remaining fields -->
         <div class="row mb-3">
             <div class="col-md-4">
-                <label class="form-label">Client ID <span class="text-danger">*</span></label>
-                <input type="number" name="client_id" class="form-control" required>
+                <label class="form-label">Client <span class="text-danger">*</span></label>
+                <select name="client_id" class="form-select" required>
+                    @foreach($clients as $client)
+                        <option value="{{ $client->id }}">{{ $client->nom }}</option>
+                    @endforeach
+                </select>
             </div>
             <div class="col-md-4">
                 <label class="form-label">Modalité ID <span class="text-danger">*</span></label>

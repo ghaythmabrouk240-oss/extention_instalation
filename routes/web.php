@@ -7,10 +7,13 @@ use App\Http\Controllers\DocumentInstallationController;
 use App\Http\Controllers\SousEquipementController;
 use App\Http\Controllers\ProfilCatLabController;
 use App\Http\Controllers\HistoriqueStatutInstallationController;
+use App\Http\Controllers\DashboardController;
 
 Route::get('/', function () {
     return redirect()->route('installations.index');
 });
+
+Route::get('dashboard', DashboardController::class)->name('dashboard');
 
 Route::get('installations-calendar', [InstallationController::class, 'calendar'])->name('installations.calendar');
 Route::get('installations/{installation}/export', [InstallationController::class, 'export'])->name('installations.export');

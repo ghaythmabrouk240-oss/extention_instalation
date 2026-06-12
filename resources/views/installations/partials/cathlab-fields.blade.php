@@ -90,7 +90,8 @@
     </div>
     <div class="col-md-6 d-flex align-items-end">
         <div class="form-check mb-2">
-            <input class="form-check-input" type="checkbox" name="controle_acces" id="controle_acces" {{ old('controle_acces', $cat?->controle_acces) ? 'checked' : '' }}>
+            <input type="hidden" name="controle_acces" value="0">
+            <input class="form-check-input" type="checkbox" name="controle_acces" id="controle_acces" value="1" {{ old('controle_acces', $cat?->controle_acces) ? 'checked' : '' }}>
             <label class="form-check-label" for="controle_acces">Controle d'acces disponible</label>
         </div>
     </div>

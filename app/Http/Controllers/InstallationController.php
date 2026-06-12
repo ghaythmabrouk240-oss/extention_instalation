@@ -40,7 +40,7 @@ class InstallationController extends Controller
             });
         }
 
-        $installations = $query->latest()->get();
+        $installations = $query->orderByRaw("FIELD(criticite, 'Critique', 'Haute', 'Moyenne', 'Basse')")->latest()->get();
 
         if ($request->boolean('export')) {
             return $this->exportList($installations);
@@ -127,14 +127,19 @@ class InstallationController extends Controller
     {
         $validated = $this->validateInstallation($request);
         $cathProfile = $this->validateCathProfile($request, $validated['type_profil']);
+        $irmProfile = $this->validateIrmProfile($request, $validated['type_profil']);
         $secondaryEquipements = $validated['equipements_secondaires'] ?? [];
         unset($validated['equipements_secondaires']);
 
-        $installation = DB::transaction(function () use ($validated, $cathProfile, $secondaryEquipements) {
+        $installation = DB::transaction(function () use ($validated, $cathProfile, $irmProfile, $secondaryEquipements) {
             $installation = Installation::create($validated);
 
             if ($installation->type_profil === 'CATHETERISME') {
                 $installation->profilCatLab()->create($cathProfile);
+            }
+
+            if ($installation->type_profil === 'IRM') {
+                $installation->profilIrm()->create($irmProfile);
             }
 
             $this->syncSecondaryEquipements($installation, $secondaryEquipements);
@@ -197,42 +202,58 @@ class InstallationController extends Controller
         $clients = Client::orderBy('nom')->get();
         $users = User::orderBy('name')->get();
 
-        return view('installations.edit', compact('installation', 'equipements', 'clients', 'users'));
+        return view('installations.edit', compact('installation', 'equipements', 'clients', 'users'))->with('test_message', 'Installation edit updated at ' . now());
     }
 
     public function update(Request $request, Installation $installation)
     {
-        $validated = $this->validateInstallation($request, $installation);
-        $cathProfile = $this->validateCathProfile($request, $validated['type_profil']);
-        $secondaryEquipements = $validated['equipements_secondaires'] ?? [];
-        unset($validated['equipements_secondaires']);
+        try {
+            $validated = $this->validateInstallation($request, $installation);
+            $cathProfile = $this->validateCathProfile($request, $validated['type_profil']);
+            $irmProfile = $this->validateIrmProfile($request, $validated['type_profil']);
+            $secondaryEquipements = $validated['equipements_secondaires'] ?? [];
+            unset($validated['equipements_secondaires']);
 
-        DB::transaction(function () use ($installation, $validated, $cathProfile, $secondaryEquipements) {
-            if ($installation->statut !== $validated['statut']) {
-                HistoriqueStatutInstallation::create([
-                    'installation_id' => $installation->id,
-                    'user_id' => auth()->id() ?? 1,
-                    'ancien_statut' => $installation->statut,
-                    'nouveau_statut' => $validated['statut'],
-                    'commentaire' => 'Changement de statut via modification',
-                ]);
-            }
+            DB::transaction(function () use ($installation, $validated, $cathProfile, $irmProfile, $secondaryEquipements) {
+                if ($installation->statut !== $validated['statut']) {
+                    HistoriqueStatutInstallation::create([
+                        'installation_id' => $installation->id,
+                        'user_id' => auth()->id() ?? 1,
+                        'ancien_statut' => $installation->statut,
+                        'nouveau_statut' => $validated['statut'],
+                        'commentaire' => 'Changement de statut via modification',
+                    ]);
+                }
 
-            $installation->update($validated);
+                $installation->update($validated);
 
-            if ($installation->type_profil === 'CATHETERISME') {
-                $installation->profilCatLab()->updateOrCreate(
-                    ['installation_id' => $installation->id],
-                    $cathProfile
-                );
-            } else {
-                $installation->profilCatLab()->delete();
-            }
+                if ($installation->type_profil === 'CATHETERISME') {
+                    $installation->profilCatLab()->updateOrCreate(
+                        ['installation_id' => $installation->id],
+                        $cathProfile
+                    );
+                } else {
+                    $installation->profilCatLab()->delete();
+                }
 
-            $this->syncSecondaryEquipements($installation, $secondaryEquipements);
-        });
+                if ($installation->type_profil === 'IRM') {
+                    $installation->profilIrm()->updateOrCreate(
+                        ['installation_id' => $installation->id],
+                        $irmProfile
+                    );
+                } else {
+                    $installation->profilIrm()->delete();
+                }
 
-        return redirect()->route('installations.show', $installation)->with('success', 'Installation mise a jour avec succes.');
+                $this->syncSecondaryEquipements($installation, $secondaryEquipements);
+            });
+
+            return redirect()->route('installations.show', $installation)->with('success', 'Installation mise a jour avec succes.');
+        } catch (\Illuminate\Validation\ValidationException $e) {
+            return back()->withInput()->withErrors($e->errors())->with('error', 'Erreur de validation');
+        } catch (\Exception $e) {
+            return back()->withInput()->with('error', 'Erreur: ' . $e->getMessage());
+        }
     }
 
     public function destroy(Installation $installation)
@@ -295,6 +316,39 @@ class InstallationController extends Controller
         $validated['controle_acces'] = $request->boolean('controle_acces');
 
         return $validated;
+    }
+
+    private function validateIrmProfile(Request $request, string $typeProfil): array
+    {
+        if ($typeProfil !== 'IRM') {
+            return [];
+        }
+
+        $validated = $request->validate([
+            'profil_irm.champ_magnetique' => 'required|string|max:255',
+            'profil_irm.blindage' => 'required|string|max:255',
+            'profil_irm.atelier' => 'nullable|string|max:255',
+            'profil_irm.batiment' => 'required|string|max:255',
+            'profil_irm.etage' => 'required|string|max:255',
+            'profil_irm.zone' => 'required|string|max:255',
+            'profil_irm.zone_controlee' => 'boolean',
+            'profil_irm.confinement_ferromagnetique' => 'boolean',
+            'profil_irm.arret_urgence' => 'boolean',
+        ]);
+
+        $irmData = [
+            'champ_magnetique' => $validated['profil_irm']['champ_magnetique'],
+            'blindage' => $validated['profil_irm']['blindage'],
+            'atelier' => $validated['profil_irm']['atelier'] ?? null,
+            'batiment' => $validated['profil_irm']['batiment'],
+            'etage' => $validated['profil_irm']['etage'],
+            'zone' => $validated['profil_irm']['zone'],
+            'zone_controlee' => $request->boolean('profil_irm.zone_controlee'),
+            'confinement_ferromagnetique' => $request->boolean('profil_irm.confinement_ferromagnetique'),
+            'arret_urgence' => $request->boolean('profil_irm.arret_urgence'),
+        ];
+
+        return $irmData;
     }
 
     private function syncSecondaryEquipements(Installation $installation, array $equipementIds): void

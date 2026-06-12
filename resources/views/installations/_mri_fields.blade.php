@@ -35,18 +35,21 @@
     <div class="row">
         <div class="col-md-4">
             <div class="form-check">
+                <input type="hidden" name="profil_irm[zone_controlee]" value="0">
                 <input class="form-check-input" type="checkbox" name="profil_irm[zone_controlee]" value="1" id="zone_controlee" @checked(old('profil_irm.zone_controlee', $profile?->zone_controlee))>
                 <label class="form-check-label" for="zone_controlee">Zone contrôlée</label>
             </div>
         </div>
         <div class="col-md-4">
             <div class="form-check">
+                <input type="hidden" name="profil_irm[confinement_ferromagnetique]" value="0">
                 <input class="form-check-input" type="checkbox" name="profil_irm[confinement_ferromagnetique]" value="1" id="confinement_ferromagnetique" @checked(old('profil_irm.confinement_ferromagnetique', $profile?->confinement_ferromagnetique))>
                 <label class="form-check-label" for="confinement_ferromagnetique">Confinement ferromagnétique</label>
             </div>
         </div>
         <div class="col-md-4">
             <div class="form-check">
+                <input type="hidden" name="profil_irm[arret_urgence]" value="0">
                 <input class="form-check-input" type="checkbox" name="profil_irm[arret_urgence]" value="1" id="arret_urgence" @checked(old('profil_irm.arret_urgence', $profile?->arret_urgence))>
                 <label class="form-check-label" for="arret_urgence">Arrêt urgence</label>
             </div>
