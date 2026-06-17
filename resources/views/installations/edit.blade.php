@@ -7,9 +7,6 @@
     <div>
         <h1>Modifier Installation: {{ $installation->code_installation }}</h1>
         <p class="breadcrumb"><a href="{{ route('installations.index') }}">Installations</a> > Modifier</p>
-        @if(session('test_message'))
-            <p class="text-danger">{{ session('test_message') }}</p>
-        @endif
     </div>
 </div>
 
@@ -137,6 +134,49 @@
                     </select>
                 </div>
             </div>
+
+            <div class="form-section">
+                <h3><i class="fa-solid fa-file-pdf me-2"></i>Documents</h3>
+                <div class="mb-3">
+                    <label class="form-label">Ajouter un document</label>
+                    <a href="{{ route('documents.create', ['installation_id' => $installation->id, 'redirect_to' => 'installation']) }}" class="btn btn-gmao-secondary">
+                        <i class="fa-solid fa-upload me-2"></i>Ajouter un document
+                    </a>
+                </div>
+                @if($installation->documents->count() > 0)
+                    <div class="table-responsive">
+                        <table class="table table-sm">
+                            <thead>
+                                <tr>
+                                    <th>Categorie</th>
+                                    <th>Version</th>
+                                    <th>Statut</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @foreach($installation->documents as $document)
+                                <tr>
+                                    <td>{{ $document->categorie }}</td>
+                                    <td>{{ $document->version }}</td>
+                                    <td>
+                                        <span class="badge {{ $document->est_version_active ? 'bg-success' : 'bg-secondary' }}">
+                                            {{ $document->est_version_active ? 'Active' : 'Inactive' }}
+                                        </span>
+                                    </td>
+                                    <td>
+                                        <a href="{{ route('documents.show', $document) }}" class="btn btn-sm btn-action btn-view" title="Voir"><i class="fa-solid fa-eye"></i></a>
+                                        <a href="{{ route('documents.edit', $document) }}" class="btn btn-sm btn-action btn-edit" title="Modifier"><i class="fa-solid fa-pen"></i></a>
+                                    </td>
+                                </tr>
+                                @endforeach
+                            </tbody>
+                        </table>
+                    </div>
+                @else
+                    <p class="text-muted">Aucun document associe a cette installation.</p>
+                @endif
+            </div>
         </div>
 
         <div class="col-md-4">
@@ -154,7 +194,7 @@
 
                 <div class="d-grid gap-2 mt-4">
                     <button type="submit" class="btn btn-gmao-primary btn-lg"><i class="fa-solid fa-save me-2"></i>Mettre a jour</button>
-                    <a href="{{ route('installations.index') }}" class="btn btn-gmao-secondary"><i class="fa-solid fa-times me-2"></i>Annuler</a>
+                    <a href="{{ route('installations.index') }}" class="btn btn-gmao-secondary"><i class="fa-solid fa-list me-2"></i>Retour a la liste</a>
                 </div>
             </div>
         </div>

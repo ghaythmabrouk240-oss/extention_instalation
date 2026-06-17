@@ -73,8 +73,11 @@
             <div class="col-md-4">
                 <label class="form-label">Profil concerne <span class="text-danger">*</span></label>
                 <select name="profil_concerne" class="form-select @error('profil_concerne') is-invalid @enderror" required>
+                    @if($selectedInstallationId)
+                        @php($selectedInstallation = $installations->firstWhere('id', $selectedInstallationId))
+                    @endif
                     @foreach(['COMMUN', 'IRM', 'CATHETERISME'] as $profil)
-                        <option value="{{ $profil }}" {{ old('profil_concerne', 'COMMUN') == $profil ? 'selected' : '' }}>{{ $profil }}</option>
+                        <option value="{{ $profil }}" {{ old('profil_concerne', $selectedInstallation?->type_profil ?? 'COMMUN') == $profil ? 'selected' : '' }}>{{ $profil }}</option>
                     @endforeach
                 </select>
                 @error('profil_concerne')

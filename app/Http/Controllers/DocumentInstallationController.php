@@ -143,7 +143,7 @@ class DocumentInstallationController extends Controller
     {
         if ($request->input('redirect_to') === 'installation') {
             return redirect()
-                ->route('installations.show', $installationId)
+                ->route('installations.edit', $installationId)
                 ->with('success', $message);
         }
 

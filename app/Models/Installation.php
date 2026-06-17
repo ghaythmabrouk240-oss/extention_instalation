@@ -110,9 +110,8 @@ class Installation extends Model
     public static function irmRequiredDocumentCategories(): array
     {
         return [
-            'Rapport d\'installation',
+            'Rapport installation generale',
             'Rapport de reception',
-            'Plan de salle',
             'Plan de prevention',
         ];
     }

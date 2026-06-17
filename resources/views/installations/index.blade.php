@@ -104,7 +104,15 @@
                     <td>{{ optional($installation->planned_start_date)->format('d/m/Y') ?? '-' }}</td>
                     <td>
                         @php($missingCount = count($installation->missingRequiredDocumentCategories()))
-                        <span class="badge {{ $missingCount ? 'bg-warning text-dark' : 'bg-success' }}" title="{{ $missingCount ? implode(', ', $installation->missingRequiredDocumentCategories()) : 'Complet' }}">{{ $missingCount }}</span>
+                        @if($missingCount)
+                            <span class="badge bg-danger" title="{{ implode(', ', $installation->missingRequiredDocumentCategories()) }}">
+                                <i class="fa-solid fa-triangle-exclamation me-1"></i>{{ $missingCount }} manquant(s)
+                            </span>
+                        @else
+                            <span class="badge bg-success" title="Tous les documents requis sont presents">
+                                <i class="fa-solid fa-check me-1"></i>Complet
+                            </span>
+                        @endif
                     </td>
                     <td>
                         <a href="{{ route('installations.show', $installation) }}" class="btn btn-action btn-view" title="Voir"><i class="fa-solid fa-eye"></i></a>

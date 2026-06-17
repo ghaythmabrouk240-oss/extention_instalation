@@ -197,12 +197,12 @@ class InstallationController extends Controller
 
     public function edit(Installation $installation)
     {
-        $installation->load('profilCatLab', 'equipements');
+        $installation->load('profilCatLab', 'equipements', 'documents');
         $equipements = Equipement::orderBy('code')->get();
         $clients = Client::orderBy('nom')->get();
         $users = User::orderBy('name')->get();
 
-        return view('installations.edit', compact('installation', 'equipements', 'clients', 'users'))->with('test_message', 'Installation edit updated at ' . now());
+        return view('installations.edit', compact('installation', 'equipements', 'clients', 'users'));
     }
 
     public function update(Request $request, Installation $installation)
