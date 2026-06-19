@@ -50,7 +50,7 @@ UNLOCK TABLES;
 
 LOCK TABLES `installations` WRITE;
 /*!40000 ALTER TABLE `installations` DISABLE KEYS */;
-INSERT INTO `installations` (`id`, `code_installation`, `nom`, `type_profil`, `statut`, `criticite`, `proprietaire_interne_id`, `client_id`, `equipement_principal_id`, `planned_start_date`, `planned_end_date`, `actual_start_date`, `actual_end_date`, `calendar_note`, `created_at`, `updated_at`, `deleted_at`) VALUES (1,'INST-CATH-0017689','Salle Catheterisme 1','CATHETERISME','Brouillon','Haute',1,1,2,'2026-06-09','2026-06-11',NULL,NULL,'Reception salle, controle radioprotection et tests qualite.','2026-06-10 07:37:37','2026-06-12 08:48:29',NULL),(3,'TEST-001','Test Installation','IRM','Brouillon','Basse',NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,'2026-06-12 08:21:57','2026-06-12 08:44:26',NULL),(4,'424234m','SALLE A','IRM','Installe','Moyenne',1,1,6,'2026-06-18','2026-07-01','2026-07-03','2026-07-10','JKH','2026-06-12 08:31:04','2026-06-12 08:31:04',NULL),(5,'424234mLK','SALLE A','CATHETERISME','En validation','Haute',1,1,6,'2026-06-18','2026-07-01','2026-07-03','2026-07-10',NULL,'2026-06-12 08:34:50','2026-06-12 08:34:50',NULL),(6,'424234testtest','SALLE A','IRM','Archive','Critique',1,1,6,'2026-06-18','2026-07-01','2026-07-03','2026-07-10',NULL,'2026-06-12 08:45:38','2026-06-12 08:46:41',NULL),(7,'424234ABNEW','SALLE A','CATHETERISME','Installe','Moyenne',1,1,6,'2026-06-18','2026-07-01','2026-07-03','2026-07-10',NULL,'2026-06-17 12:52:55','2026-06-17 12:52:55',NULL);
+INSERT INTO `installations` (`id`, `code_installation`, `nom`, `type_profil`, `statut`, `criticite`, `proprietaire_interne_id`, `client_id`, `equipement_principal_id`, `planned_start_date`, `planned_end_date`, `actual_start_date`, `actual_end_date`, `calendar_note`, `created_at`, `updated_at`, `deleted_at`) VALUES (1,'INST-CATH-0017689','Salle Catheterisme 1','CATHETERISME','Brouillon','Haute',1,1,2,'2026-06-09','2026-06-11',NULL,NULL,'Reception salle, controle radioprotection et tests qualite.','2026-06-10 07:37:37','2026-06-12 08:48:29',NULL),(3,'TEST-001','Test Installation','IRM','Brouillon','Basse',NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,'2026-06-12 08:21:57','2026-06-12 08:44:26',NULL),(4,'424234m','SALLE A','IRM','Installe','Moyenne',1,1,6,'2026-06-18','2026-07-01','2026-07-03','2026-07-10','JKH','2026-06-12 08:31:04','2026-06-12 08:31:04',NULL),(5,'424234mLK','SALLE A','CATHETERISME','En validation','Haute',1,1,6,'2026-06-18','2026-07-01','2026-07-03','2026-07-10',NULL,'2026-06-12 08:34:50','2026-06-12 08:34:50',NULL),(6,'424234testtest','SALLE A','IRM','Archive','Critique',1,1,6,'2026-06-18','2026-07-01','2026-07-03','2026-07-10',NULL,'2026-06-12 08:45:38','2026-06-12 08:46:41',NULL),(7,'424234ABNEW','SALLE A','CATHETERISME','Installe','Moyenne',1,1,6,'2026-06-18','2026-07-01','2026-07-03','2026-07-10',NULL,'2026-06-17 12:52:55','2026-06-17 12:52:55',NULL),(8,'75434','2A','IRM','Operationnel','Moyenne',1,1,2,'2026-06-18','2026-06-24','2026-06-10','2026-07-01',NULL,'2026-06-19 09:34:56','2026-06-19 09:34:56',NULL);
 /*!40000 ALTER TABLE `installations` ENABLE KEYS */;
 UNLOCK TABLES;
 
@@ -60,7 +60,7 @@ UNLOCK TABLES;
 
 LOCK TABLES `profil_irms` WRITE;
 /*!40000 ALTER TABLE `profil_irms` DISABLE KEYS */;
-INSERT INTO `profil_irms` (`id`, `installation_id`, `champ_magnetique`, `blindage`, `atelier`, `confinement_ferromagnetique`, `arret_urgence`, `batiment`, `etage`, `zone`, `zone_controlee`, `created_at`, `updated_at`) VALUES (3,3,'test','test',NULL,0,0,'test','test','test',0,'2026-06-12 08:24:35','2026-06-12 08:24:35'),(4,4,'1.5T','RF','JJK',0,0,'JHK','8','ZONE CONTROLEE',1,'2026-06-12 08:31:04','2026-06-12 08:31:04'),(5,6,'1.5T','RF','JJK',0,0,'JHK','8','ZONE CONTROLEE',0,'2026-06-12 08:45:38','2026-06-12 08:45:38');
+INSERT INTO `profil_irms` (`id`, `installation_id`, `champ_magnetique`, `zone_controlee`, `blindage`, `atelier`, `confinement_ferromagnetique`, `arret_urgence`, `batiment`, `etage`, `zone`, `created_at`, `updated_at`) VALUES (3,3,'test',0,'test',NULL,0,0,'test','test','test','2026-06-12 08:24:35','2026-06-12 08:24:35'),(4,4,'1.5T',1,'RF','JJK',0,0,'JHK','8','ZONE CONTROLEE','2026-06-12 08:31:04','2026-06-12 08:31:04'),(5,6,'1.5T',0,'RF','JJK',0,0,'JHK','8','ZONE CONTROLEE','2026-06-12 08:45:38','2026-06-12 08:45:38'),(6,8,'1.2',1,'RF conforme','N/A',1,1,'2NA','4','Zone controlée','2026-06-19 09:34:56','2026-06-19 09:34:56');
 /*!40000 ALTER TABLE `profil_irms` ENABLE KEYS */;
 UNLOCK TABLES;
 
@@ -110,7 +110,7 @@ UNLOCK TABLES;
 
 LOCK TABLES `historique_statut_installations` WRITE;
 /*!40000 ALTER TABLE `historique_statut_installations` DISABLE KEYS */;
-INSERT INTO `historique_statut_installations` (`id`, `installation_id`, `user_id`, `ancien_statut`, `nouveau_statut`, `commentaire`, `created_at`, `updated_at`) VALUES (1,4,1,'','Installe','Creation de l installation','2026-06-12 08:31:04','2026-06-12 08:31:04'),(2,5,1,'','En validation','Creation de l installation','2026-06-12 08:34:50','2026-06-12 08:34:50'),(3,6,1,'','Installe','Creation de l installation','2026-06-12 08:45:38','2026-06-12 08:45:38'),(4,6,1,'Installe','Archive','Changement de statut via modification','2026-06-12 08:46:41','2026-06-12 08:46:41'),(5,7,1,'','Installe','Creation de l installation','2026-06-17 12:52:55','2026-06-17 12:52:55');
+INSERT INTO `historique_statut_installations` (`id`, `installation_id`, `user_id`, `ancien_statut`, `nouveau_statut`, `commentaire`, `created_at`, `updated_at`) VALUES (1,4,1,'','Installe','Creation de l installation','2026-06-12 08:31:04','2026-06-12 08:31:04'),(2,5,1,'','En validation','Creation de l installation','2026-06-12 08:34:50','2026-06-12 08:34:50'),(3,6,1,'','Installe','Creation de l installation','2026-06-12 08:45:38','2026-06-12 08:45:38'),(4,6,1,'Installe','Archive','Changement de statut via modification','2026-06-12 08:46:41','2026-06-12 08:46:41'),(5,7,1,'','Installe','Creation de l installation','2026-06-17 12:52:55','2026-06-17 12:52:55'),(6,8,1,'','Operationnel','Creation de l installation','2026-06-19 09:34:56','2026-06-19 09:34:56');
 /*!40000 ALTER TABLE `historique_statut_installations` ENABLE KEYS */;
 UNLOCK TABLES;
 /*!40103 SET TIME_ZONE=@OLD_TIME_ZONE */;
@@ -122,4 +122,4 @@ UNLOCK TABLES;
 /*!40101 SET COLLATION_CONNECTION=@OLD_COLLATION_CONNECTION */;
 /*!40111 SET SQL_NOTES=@OLD_SQL_NOTES */;
 
--- Dump completed on 2026-06-19 11:31:52
+-- Dump completed on 2026-06-19 11:39:56
