@@ -9,6 +9,9 @@
         <p class="breadcrumb">GMAO > Installations</p>
     </div>
     <div class="d-flex flex-wrap gap-2">
+        <a href="{{ route('installations.graph') }}" class="btn btn-gmao-secondary">
+            <i class="fa-solid fa-network-wired me-2"></i>Graphe Installation
+        </a>
         <a href="{{ route('installations.index', array_merge($filters, ['export' => 1])) }}" class="btn btn-gmao-secondary">
             <i class="fa-solid fa-file-export me-2"></i>Exporter la liste
         </a>

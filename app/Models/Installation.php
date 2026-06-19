@@ -2,12 +2,13 @@
 
 namespace App\Models;
 
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
 class Installation extends Model
 {
-    use SoftDeletes;
+    use HasFactory, SoftDeletes;
 
     public const TYPE_IRM = 'IRM';
     public const TYPE_CATHETERISME = 'CATHETERISME';
