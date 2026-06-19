@@ -24,9 +24,10 @@ class InstallationGraphController extends Controller
     {
         $installation = Installation::with([
             'profilCatLab',
-            'equipementPrincipal',
-            'equipements',
-            'documents'
+            'profilIrm',
+            'equipementPrincipal.sousEquipements',
+            'equipements.sousEquipements',
+            'documents',
         ])->findOrFail($request->installation_id);
 
         // TODO: Re-enable authorization when authentication is set up

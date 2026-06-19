@@ -4,6 +4,7 @@ namespace Tests\Feature;
 
 use App\Models\Installation;
 use App\Models\ProfilCatLab;
+use App\Models\ProfilIRM;
 use App\Models\Equipement;
 use App\Models\Client;
 use App\Models\DocumentInstallation;
@@ -14,6 +15,22 @@ use Tests\TestCase;
 class InstallationGraphControllerTest extends TestCase
 {
     use RefreshDatabase;
+
+    public function test_graph_page_enables_irm_in_the_shared_interface(): void
+    {
+        Installation::factory()->create([
+            'type_profil' => 'IRM',
+            'code_installation' => 'INS-IRM-UI',
+        ]);
+
+        $this->get(route('installations.graph'))
+            ->assertOk()
+            ->assertSee('INS-IRM-UI', false)
+            ->assertSee('<option value="IRM">IRM</option>', false)
+            ->assertSee('vis.Network', false)
+            ->assertDontSee('IRM (à venir)', false)
+            ->assertDontSee('Profil IRM — à venir', false);
+    }
 
     public function test_get_catheterisme_complete_installation_returns_200_with_completion_100(): void
     {
@@ -72,6 +89,12 @@ class InstallationGraphControllerTest extends TestCase
             'acceptance_test_status' => 'conforme',
             'table_patient' => 'Table XYZ', // Add this to avoid being a blocker
             'injecteur' => 'Injecteur Medrad', // Add this to avoid being a blocker
+            'radiation_shielding_status' => 'conforme',
+            'lead_glass_status' => 'conforme',
+            'ceiling_support_status' => 'conforme',
+            'dose_monitoring_available' => true,
+            'emergency_equipment_status' => 'conforme',
+            'access_control_status' => 'conforme',
         ]);
 
         $response = $this->get('/dashboard/installation-graph?installation_id=' . $installation->id . '&profile=CATHETERISME');
@@ -86,27 +109,41 @@ class InstallationGraphControllerTest extends TestCase
         $this->assertEquals('rouge', $rapportReceptionNode['state']);
     }
 
-    public function test_get_with_profile_irm_returns_stub(): void
+    public function test_get_with_profile_irm_returns_readiness_graph(): void
     {
         $installation = Installation::factory()->create([
             'type_profil' => 'IRM',
+        ]);
+        ProfilIRM::create([
+            'installation_id' => $installation->id,
+            'champ_magnetique' => '3T',
+            'blindage' => 'Blindage RF conforme',
+            'zone_controlee' => true,
+            'confinement_ferromagnetique' => true,
+            'arret_urgence' => true,
+            'batiment' => 'B1',
+            'etage' => '2',
+            'zone' => 'Zone 4',
         ]);
 
         $response = $this->get('/dashboard/installation-graph?installation_id=' . $installation->id . '&profile=IRM');
 
         $response->assertStatus(200);
-        $response->assertJson([
-            'summary' => [
-                'installation' => $installation->code_installation,
+        $response
+            ->assertJsonPath('summary.installation', $installation->code_installation)
+            ->assertJsonPath('summary.profile', 'IRM')
+            ->assertJsonFragment([
+                'id' => 'champ_magnetique',
+                'state' => 'vert',
                 'profile' => 'IRM',
-                'total_nodes' => 0,
-                'blockers' => 0,
-                'warnings' => 0,
-                'completion_rate' => 0,
-            ],
-            'nodes' => [],
-            'edges' => [],
-        ]);
+            ])
+            ->assertJsonFragment([
+                'id' => 'securite_irm',
+                'state' => 'vert',
+            ]);
+
+        $this->assertGreaterThan(0, $response->json('summary.total_nodes'));
+        $this->assertNotEmpty($response->json('edges'));
     }
 
     public function test_get_with_nonexistent_installation_id_returns_422(): void

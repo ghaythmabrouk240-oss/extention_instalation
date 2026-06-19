@@ -19,7 +19,7 @@
         <select id="installation-select" class="form-select">
             <option value="">Sélectionner une installation...</option>
             @foreach($installations as $installation)
-                <option value="{{ $installation->id }}" {{ $installation->id == $selectedInstallationId ? 'selected' : '' }}>
+                <option value="{{ $installation->id }}" data-profile="{{ $installation->type_profil }}" {{ $installation->id == $selectedInstallationId ? 'selected' : '' }}>
                     {{ $installation->code_installation }} - {{ $installation->nom }}
                 </option>
             @endforeach
@@ -29,7 +29,7 @@
         <label class="form-label">Profil</label>
         <select id="profile-select" class="form-select">
             <option value="CATHETERISME" selected>Cathétérisme</option>
-            <option value="IRM">IRM (à venir)</option>
+            <option value="IRM">IRM</option>
         </select>
     </div>
     <div class="col-md-2">
@@ -45,6 +45,8 @@
         <label class="form-label">Filtre Type</label>
         <select id="type-filter" class="form-select">
             <option value="all">Tous</option>
+            <option value="equipement_secondaire">Equipement secondaire</option>
+            <option value="sous_equipement">Sous-equipement</option>
             <option value="equipement_principal">Équipement principal</option>
             <option value="composant_profil">Composant profil</option>
             <option value="securite">Sécurité</option>
@@ -79,10 +81,6 @@
             <i class="fa-solid fa-network-wired fa-3x text-muted mb-3"></i>
             <p class="text-muted">Sélectionnez une installation pour afficher le graphe</p>
         </div>
-        <div id="irm-message" class="text-center py-5" style="display: none;">
-            <i class="fa-solid fa-magnet fa-3x text-muted mb-3"></i>
-            <p class="text-muted">Profil IRM — à venir (Person A)</p>
-        </div>
     </div>
     <div class="card-footer">
         <div class="row">
@@ -112,7 +110,6 @@ document.addEventListener('DOMContentLoaded', function() {
     
     const container = document.getElementById('graph-container');
     const emptyState = document.getElementById('empty-state');
-    const irmMessage = document.getElementById('irm-message');
     const installationSelect = document.getElementById('installation-select');
     const profileSelect = document.getElementById('profile-select');
     const stateFilter = document.getElementById('state-filter');
@@ -121,7 +118,6 @@ document.addEventListener('DOMContentLoaded', function() {
     console.log('Elements found:', {
         container: !!container,
         emptyState: !!emptyState,
-        irmMessage: !!irmMessage,
         installationSelect: !!installationSelect,
         profileSelect: !!profileSelect,
         stateFilter: !!stateFilter,
@@ -138,20 +134,11 @@ document.addEventListener('DOMContentLoaded', function() {
         if (!installationId) {
             container.style.display = 'none';
             emptyState.style.display = 'block';
-            irmMessage.style.display = 'none';
-            return;
-        }
-        
-        if (profile === 'IRM') {
-            container.style.display = 'none';
-            emptyState.style.display = 'none';
-            irmMessage.style.display = 'block';
             return;
         }
         
         container.style.display = 'block';
         emptyState.style.display = 'none';
-        irmMessage.style.display = 'none';
         
         fetch(`/dashboard/installation-graph?installation_id=${installationId}&profile=${profile}`)
             .then(response => {
@@ -314,6 +301,9 @@ document.addEventListener('DOMContentLoaded', function() {
             case 'equipements':
                 window.location.href = `/equipements/${node.source_id}`;
                 break;
+            case 'sous_equipements':
+                window.location.href = `/sous-equipements/${node.source_id}`;
+                break;
             case 'document_installations':
                 window.location.href = `/documents/${node.source_id}`;
                 break;
@@ -323,8 +313,30 @@ document.addEventListener('DOMContentLoaded', function() {
     }
     
     // Event listeners
-    installationSelect.addEventListener('change', loadGraph);
-    profileSelect.addEventListener('change', loadGraph);
+    function syncProfileFromInstallation() {
+        const selectedOption = installationSelect.options[installationSelect.selectedIndex];
+        const installationProfile = selectedOption?.dataset.profile;
+
+        if (installationProfile) {
+            profileSelect.value = installationProfile;
+        }
+    }
+
+    function selectInstallationForProfile(profile) {
+        const matchingOption = Array.from(installationSelect.options)
+            .find(option => option.value && option.dataset.profile === profile);
+
+        installationSelect.value = matchingOption?.value || '';
+    }
+
+    installationSelect.addEventListener('change', () => {
+        syncProfileFromInstallation();
+        loadGraph();
+    });
+    profileSelect.addEventListener('change', () => {
+        selectInstallationForProfile(profileSelect.value);
+        loadGraph();
+    });
     stateFilter.addEventListener('change', () => {
         if (graphData) renderGraph(graphData);
     });
@@ -336,12 +348,12 @@ document.addEventListener('DOMContentLoaded', function() {
     console.log('Initial installation selected:', installationSelect.value);
     if (installationSelect.value) {
         console.log('Loading initial graph...');
+        syncProfileFromInstallation();
         loadGraph();
     } else {
         console.log('No installation selected, showing empty state');
         container.style.display = 'none';
         emptyState.style.display = 'block';
-        irmMessage.style.display = 'none';
     }
 });
 </script>
