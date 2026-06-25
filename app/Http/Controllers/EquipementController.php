@@ -49,6 +49,12 @@ class EquipementController extends Controller
         return view('equipements.show', compact('equipement'));
     }
 
+    public function scan(Equipement $equipement)
+    {
+        $equipement->load(['sousEquipements', 'installations']);
+        return view('equipements.scan', compact('equipement'));
+    }
+
     public function edit(Equipement $equipement)
     {
         return view('equipements.edit', compact('equipement'));

@@ -21,6 +21,7 @@ Route::get('/installations/graph', [InstallationGraphController::class, 'index']
 Route::get('installations-calendar', [InstallationController::class, 'calendar'])->name('installations.calendar');
 Route::get('installations/{installation}/export', [InstallationController::class, 'export'])->name('installations.export');
 Route::resource('installations', InstallationController::class);
+Route::get('equipements/{equipement}/scan', [EquipementController::class, 'scan'])->name('equipements.scan');
 Route::resource('equipements', EquipementController::class);
 Route::resource('documents', DocumentInstallationController::class);
 Route::resource('sous-equipements', SousEquipementController::class);

@@ -27,6 +27,19 @@
     </div>
 </div>
 
+<div class="card mb-4">
+    <div class="card-body">
+        <h4 class="mb-3 text-primary">Code QR</h4>
+        <div class="text-center">
+            <img src="{{ $equipement->getQrCodeUrl(200) }}" alt="QR Code" class="img-fluid" style="max-width: 200px;">
+            <p class="mt-2 text-muted small">Scannez ce code pour accéder aux informations de l'équipement</p>
+            <a href="{{ route('equipements.scan', $equipement) }}" target="_blank" class="btn btn-gmao-primary btn-sm mt-2">
+                <i class="fa-solid fa-qrcode me-1"></i> Voir page mobile
+            </a>
+        </div>
+    </div>
+</div>
+
 <div class="card">
     <div class="card-body p-0">
         <div class="px-4 py-3 border-bottom d-flex justify-content-between align-items-center">

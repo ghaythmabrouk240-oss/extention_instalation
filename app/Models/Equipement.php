@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Services\QrCodeService;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 
@@ -37,5 +38,16 @@ class Equipement extends Model
     public function installations()
     {
         return $this->belongsToMany(Installation::class, 'lien_equipement_installation')->withPivot('role')->withTimestamps();
+    }
+
+    /**
+     * Get QR code URL for this equipment
+     *
+     * @param int $size
+     * @return string
+     */
+    public function getQrCodeUrl(int $size = 200): string
+    {
+        return app(QrCodeService::class)->generateEquipmentQrUrl($this->id, $size);
     }
 }
