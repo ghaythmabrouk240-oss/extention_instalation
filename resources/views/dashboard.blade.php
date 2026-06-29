@@ -37,6 +37,42 @@
             </div>
         @endforeach
     </div>
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <h5 class="mb-0 text-primary">Budget par devise</h5>
+        <span class="badge bg-primary">EUR / TND</span>
+    </div>
+    <div class="row mb-4">
+        @foreach($budgetByCurrency as $currency => $totals)
+            <div class="col-md-6 mb-3">
+                <div class="card h-100">
+                    <div class="card-header d-flex justify-content-between align-items-center">
+                        <span>{{ $currency === 'TND' ? 'Dinar tunisien' : 'Euro' }}</span>
+                        <span class="badge bg-secondary">{{ $currency }}</span>
+                    </div>
+                    <div class="card-body">
+                        <div class="row g-3">
+                            <div class="col-6">
+                                <div class="text-muted small">Budget prevu</div>
+                                <strong>{{ number_format($totals['budget_prevu'], 2) }} {{ $currency }}</strong>
+                            </div>
+                            <div class="col-6">
+                                <div class="text-muted small">Total frais</div>
+                                <strong>{{ number_format($totals['total_frais'], 2) }} {{ $currency }}</strong>
+                            </div>
+                            <div class="col-6">
+                                <div class="text-muted small">Penalites</div>
+                                <strong>{{ number_format($totals['total_penalites'], 2) }} {{ $currency }}</strong>
+                            </div>
+                            <div class="col-6">
+                                <div class="text-muted small">Total final</div>
+                                <strong>{{ number_format($totals['total_final'], 2) }} {{ $currency }}</strong>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        @endforeach
+    </div>
 @else
     <div class="alert alert-warning alert-gmao">
         <i class="fa-solid fa-eye-slash me-2"></i>

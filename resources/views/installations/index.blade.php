@@ -83,6 +83,8 @@
                     <th>Equipement principal</th>
                     <th>Statut</th>
                     <th>Criticite</th>
+                    <th>Budget prevu</th>
+                    <th>Total final</th>
                     <th>Debut prevu</th>
                     <th>Docs manquants</th>
                     <th>Actions</th>
@@ -104,6 +106,20 @@
                     <td>{{ $installation->equipementPrincipal?->code ?? '-' }}</td>
                     <td><span class="badge bg-secondary">{{ $installation->statut }}</span></td>
                     <td>{{ $installation->criticite ?? 'N/A' }}</td>
+                    <td>
+                        @if($installation->budget)
+                            {{ number_format($installation->budget->budget_prevu ?? 0, 2) }} {{ $installation->budget->devise }}
+                        @else
+                            -
+                        @endif
+                    </td>
+                    <td>
+                        @if($installation->budget)
+                            {{ number_format($installation->budget->total_final ?? 0, 2) }} {{ $installation->budget->devise }}
+                        @else
+                            -
+                        @endif
+                    </td>
                     <td>{{ optional($installation->planned_start_date)->format('d/m/Y') ?? '-' }}</td>
                     <td>
                         @php($missingCount = count($installation->missingRequiredDocumentCategories()))
@@ -119,6 +135,7 @@
                     </td>
                     <td>
                         <a href="{{ route('installations.show', $installation) }}" class="btn btn-action btn-view" title="Voir"><i class="fa-solid fa-eye"></i></a>
+                        <a href="{{ route('installations.budget', $installation) }}" class="btn btn-action btn-view" title="Budget"><i class="fa-solid fa-calculator"></i></a>
                         <a href="{{ route('installations.edit', $installation) }}" class="btn btn-action btn-edit" title="Modifier"><i class="fa-solid fa-pen"></i></a>
                         <form action="{{ route('installations.destroy', $installation) }}" method="POST" class="d-inline" onsubmit="return confirm('Supprimer cette installation ?');">
                             @csrf
@@ -129,7 +146,7 @@
                 </tr>
                 @empty
                 <tr>
-                    <td colspan="10" class="text-center py-4">Aucune installation trouvee.</td>
+                    <td colspan="12" class="text-center py-4">Aucune installation trouvee.</td>
                 </tr>
                 @endforelse
             </tbody>

@@ -23,11 +23,15 @@ class Equipement extends Model
         'date_debut_garantie',
         'plan_prev',
         'garantie',
+        'date_fin_garantie',
+        'statut_couverture',
+        'contrat_reference',
     ];
 
     protected $casts = [
         'date_installation' => 'date',
         'date_debut_garantie' => 'date',
+        'date_fin_garantie' => 'date',
     ];
 
     public function sousEquipements()

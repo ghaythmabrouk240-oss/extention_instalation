@@ -179,9 +179,26 @@ class ExcelExportService
         $this->addTitle('Liste des Installations');
 
         // Table
-        $headers = ['Code', 'Nom', 'Profil', 'Client', 'Equipement principal', 'Statut', 'Criticite', 'Debut prevu', 'Docs requis manquants'];
+        $headers = [
+            'Code',
+            'Nom',
+            'Profil',
+            'Client',
+            'Equipement principal',
+            'Statut',
+            'Criticite',
+            'Budget prevu',
+            'Total frais',
+            'Total penalites',
+            'Total final',
+            'Devise',
+            'Statut budget',
+            'Debut prevu',
+            'Docs requis manquants',
+        ];
         $data = [];
         foreach ($installations as $installation) {
+            $budget = $installation->budget;
             $data[] = [
                 $installation->code_installation,
                 $installation->nom,
@@ -190,6 +207,12 @@ class ExcelExportService
                 $installation->equipementPrincipal?->code ?? 'Non defini',
                 $installation->statut,
                 $installation->criticite ?? 'Non defini',
+                $budget?->budget_prevu ?? 0,
+                $budget?->total_frais ?? 0,
+                $budget?->total_penalites ?? 0,
+                $budget?->total_final ?? 0,
+                $budget?->devise ?? 'Non defini',
+                $budget?->statut_validation ?? 'Non configure',
                 optional($installation->planned_start_date)->format('d/m/Y') ?? 'Non defini',
                 implode(' | ', $installation->missingRequiredDocumentCategories()),
             ];

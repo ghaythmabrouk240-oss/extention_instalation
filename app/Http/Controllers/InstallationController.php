@@ -18,7 +18,7 @@ class InstallationController extends Controller
 {
     public function index(Request $request)
     {
-        $query = Installation::with(['equipementPrincipal', 'documents', 'client']);
+        $query = Installation::with(['equipementPrincipal', 'documents', 'client', 'budget']);
 
         if ($request->filled('type_profil')) {
             $query->where('type_profil', $request->input('type_profil'));

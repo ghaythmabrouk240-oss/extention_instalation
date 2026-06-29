@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\Installation;
+use App\Models\InstallationBudget;
 use App\Services\InstallationStatusService;
 use Illuminate\Support\Facades\Schema;
 
@@ -88,9 +89,36 @@ class DashboardController extends Controller
             ->limit(6)
             ->get();
 
+        $budgetByCurrency = collect(['EUR', 'TND'])->mapWithKeys(fn ($currency) => [
+            $currency => [
+                'budget_prevu' => 0,
+                'total_frais' => 0,
+                'total_penalites' => 0,
+                'total_final' => 0,
+            ],
+        ]);
+
+        InstallationBudget::query()
+            ->selectRaw('devise, COALESCE(SUM(budget_prevu), 0) as budget_prevu')
+            ->selectRaw('COALESCE(SUM(total_frais), 0) as total_frais')
+            ->selectRaw('COALESCE(SUM(total_penalites), 0) as total_penalites')
+            ->selectRaw('COALESCE(SUM(total_final), 0) as total_final')
+            ->whereIn('devise', ['EUR', 'TND'])
+            ->groupBy('devise')
+            ->get()
+            ->each(function ($budget) use ($budgetByCurrency) {
+                $budgetByCurrency[$budget->devise] = [
+                    'budget_prevu' => (float) $budget->budget_prevu,
+                    'total_frais' => (float) $budget->total_frais,
+                    'total_penalites' => (float) $budget->total_penalites,
+                    'total_final' => (float) $budget->total_final,
+                ];
+            });
+
         return view('dashboard', compact(
             'strategicKpis',
             'operationalKpis',
+            'budgetByCurrency',
             'canViewStrategicKpis',
             'statusCounts',
             'recentInstallations',

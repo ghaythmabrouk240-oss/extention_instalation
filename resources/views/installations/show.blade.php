@@ -9,6 +9,9 @@
         <p class="breadcrumb"><a href="{{ route('installations.index') }}">Installations</a> > {{ $installation->code_installation }}</p>
     </div>
     <div>
+        <a href="{{ route('installations.budget', $installation) }}" class="btn btn-gmao-secondary me-2">
+            <i class="fa-solid fa-calculator me-2"></i>Budget
+        </a>
         <a href="{{ route('installations.export', $installation) }}" class="btn btn-gmao-secondary me-2">
             <i class="fa-solid fa-file-export me-2"></i>Exporter
         </a>
@@ -81,6 +84,9 @@
             </li>
             <li class="nav-item" role="presentation">
                 <button class="nav-link" id="audit-tab" data-bs-toggle="tab" data-bs-target="#audit" type="button" role="tab">Audit</button>
+            </li>
+            <li class="nav-item" role="presentation">
+                <button class="nav-link" id="budget-tab" data-bs-toggle="tab" data-bs-target="#budget" type="button" role="tab">Budget</button>
             </li>
         </ul>
 
@@ -406,6 +412,19 @@
                         @endif
                     </tbody>
                 </table>
+            </div>
+
+            <div class="tab-pane fade" id="budget" role="tabpanel">
+                <div class="d-flex justify-content-between align-items-center mb-3">
+                    <h4 class="mb-0 text-primary">Budget et Suivi Financier</h4>
+                    <a href="{{ route('installations.budget', $installation) }}" class="btn btn-gmao-primary">
+                        <i class="fa-solid fa-calculator me-2"></i>Gérer le Budget
+                    </a>
+                </div>
+                <div class="alert alert-info">
+                    <i class="fa-solid fa-info-circle me-2"></i>
+                    Cliquez sur "Gérer le Budget" pour accéder au suivi financier complet, ajouter des dépenses, configurer les pénalités et exporter les factures.
+                </div>
             </div>
         </div>
     </div>

@@ -74,6 +74,11 @@ class Installation extends Model
         return $this->hasOne(ProfilIRM::class);
     }
 
+    public function budget()
+    {
+        return $this->hasOne(InstallationBudget::class);
+    }
+
     public function client()
     {
         return $this->belongsTo(Client::class);
